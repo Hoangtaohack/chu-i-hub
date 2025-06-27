@@ -52,15 +52,12 @@ def get_jwt_tokens(input_file, output_file):
     except Exception as e:
         print(f"❌ Lỗi khi lưu file {output_file}: {str(e)}")
 
-def run_periodically():
-    while True:
-        for input_file, output_file in ACCOUNT_FILES:
-            get_jwt_tokens(input_file, output_file)
-        # Chờ 8 tiếng
-        time.sleep(8 * 60 * 60)
-
+def run_once():
+    for input_file, output_file in ACCOUNT_FILES:
+        get_jwt_tokens(input_file, output_file)
 if __name__ == "__main__":
-    print("🚀 Bắt đầu lấy token JWT từ các file...")
+    print("🚀 Đang lấy token JWT...")
+    run_once()
 
     # Lấy token lần đầu
     for input_file, output_file in ACCOUNT_FILES:
