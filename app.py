@@ -79,17 +79,6 @@ async def send_multiple_requests(encrypted_uid, server_name, url):
             return None
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        failed_msgs = [r for r in results if isinstance(r, str) and "Max Likes for Today" in r]
-        if len(failed_msgs) == len(results):
-            return "max_likes"
-
-        return results
-    except Exception as e:
-        app.logger.error(f"Exception in send_multiple_requests")
-        return None
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
         return results
     except Exception as e:
         app.logger.error(f"Exception in send_multiple_requests")
@@ -150,6 +139,8 @@ def encrypt_aes(hex_data, key, iv):
 
 @app.route('/player', methods=['GET'])
 def main():
+    start_time = time.time()  # ⏱️ Bắt đầu đếm thời gian
+
     uid = request.args.get('uid')
     region = request.args.get('region', '').upper()
 
@@ -161,13 +152,11 @@ def main():
     except ValueError:
         return jsonify({"error": "UID phải là số"}), 400
 
-    # Lấy token từ file
     info_tokens = load_tokens(region, purpose="info")
     if not info_tokens or 'token' not in info_tokens[0]:
         return jsonify({"error": "Không thể lấy token INFO từ máy chủ"}), 500
     info_token = info_tokens[0]['token']
 
-    # Tạo protobuf và mã hóa cho info
     protobuf_data = create_protobuf(saturn_, 1)
     hex_data = protobuf_to_hex(protobuf_data)
     encrypted_hex = encrypt_aes(hex_data, key, iv)
@@ -184,7 +173,6 @@ def main():
     }
 
     try:
-        # Gửi request để lấy info ban đầu
         res_before = requests.post(
             "https://clientbp.ggblueshark.com/GetPlayerPersonalShow",
             headers=headers,
@@ -192,10 +180,9 @@ def main():
         )
         res_before.raise_for_status()
         user_data = decode_hex(res_before.content.hex())
-    except Exception as e:
+    except Exception:
         return jsonify({"error": f"Không thể kết nối hoặc giải mã dữ liệu"}), 502
 
-    # Gửi like
     encrypted_uid = enc(uid)
     if encrypted_uid:
         if region in {"BR", "US", "SAC", "VN"}:
@@ -208,14 +195,14 @@ def main():
         results = loop.run_until_complete(send_multiple_requests(encrypted_uid, region, like_url))
         loop.close()
 
-        # Nếu tất cả token đều trả về "max like"
-        if results == "max_likes":
+        if results is None:
+            elapsed_time = round(time.time() - start_time, 2)
             return jsonify({
-                "error": f"UID {uid} đã nhận tối đa lượt like hôm nay.",
-                "status": 2
-            }), 429
+                "error": "Không thể gửi like vì lỗi hệ thống hoặc thiếu token.",
+                "status": 2,
+                "elapsed_time": f"{elapsed_time}s"
+            }), 500
 
-    # Gửi lại request để lấy info sau khi like
     try:
         res_after = requests.post(
             "https://clientbp.ggblueshark.com/GetPlayerPersonalShow",
@@ -225,23 +212,25 @@ def main():
         res_after.raise_for_status()
         user_data_after = decode_hex(res_after.content.hex())
     except Exception as e:
-        return jsonify({"error": f"Không thể lấy dữ liệu sau khi like"}), 502
+        return jsonify({"error": f"Không thể lấy dữ liệu sau khi like: {e}"}), 502
 
-    # Tính toán like đã tăng
     try:
         player = user_data_after.basicinfo[0]
         before_like = user_data.basicinfo[0].likes
         after_like = player.likes
         like_diff = after_like - before_like
-    except Exception as e:
+    except Exception:
         before_like = after_like = like_diff = 0
         player = None
 
+    elapsed_time = round(time.time() - start_time, 2)
+
     if like_diff == 0:
         return jsonify({
-            "error": f"UID {uid} has already received Max Likes for Today Please Try a different UID.",
+            "error": f"UID {uid} has already received Max Likes for Today.",
             "UID": uid,
-            "status": 2
+            "status": 2,
+            "elapsed_time": f"{elapsed_time}s"
         }), 200
 
     return jsonify({
@@ -252,6 +241,7 @@ def main():
         "LikesAfter": after_like,
         "LikesGivenByAPI": like_diff,
         "status": 1,
+        "elapsed_time": f"{elapsed_time}s",
         "Tiktok": "@amdtsmodz"
     })
     
