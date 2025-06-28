@@ -6,6 +6,7 @@ from google.protobuf.json_format import MessageToJson
 import binascii
 import aiohttp
 import requests
+import os
 import uid_generator_pb2
 import json
 import time
