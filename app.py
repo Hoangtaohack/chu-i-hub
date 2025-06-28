@@ -32,7 +32,7 @@ def encrypt_message(plaintext):
         encrypted = cipher.encrypt(padded)
         return binascii.hexlify(encrypted).decode()
     except Exception as e:
-        app.logger.error(f"Encryption error: {e}")
+        app.logger.error(f"Encryption error")
         return None
 
 async def send_request(encrypted_uid, token, url):
@@ -56,7 +56,7 @@ async def send_request(encrypted_uid, token, url):
                     return response.status
                 return await response.text()
     except Exception as e:
-        app.logger.error(f"Exception in send_request: {e}")
+        app.logger.error(f"Exception in send_request")
         return None
 
 
@@ -68,7 +68,7 @@ async def send_multiple_requests(encrypted_uid, server_name, url):
             return None
 
         tasks = []
-        for idx, token_entry in enumerate(tokens[:100]):
+        for idx, token_entry in enumerate(tokens[:101]):
             token = token_entry.get("token")
             if token:
                 app.logger.info(f"[Token {idx}] Gửi like với token: {token[:15]}...")
@@ -86,13 +86,13 @@ async def send_multiple_requests(encrypted_uid, server_name, url):
 
         return results
     except Exception as e:
-        app.logger.error(f"Exception in send_multiple_requests: {e}")
+        app.logger.error(f"Exception in send_multiple_requests")
         return None
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
         return results
     except Exception as e:
-        app.logger.error(f"Exception in send_multiple_requests: {e}")
+        app.logger.error(f"Exception in send_multiple_requests")
         return None
 
 
@@ -103,7 +103,7 @@ def create_uid_protobuf(uid):
         message.aditya = 1
         return message.SerializeToString()
     except Exception as e:
-        app.logger.error(f"Error creating uid protobuf: {e}")
+        app.logger.error(f"Error creating uid protobuf")
         return None
 
 def enc(uid):
@@ -193,7 +193,7 @@ def main():
         res_before.raise_for_status()
         user_data = decode_hex(res_before.content.hex())
     except Exception as e:
-        return jsonify({"error": f"Không thể kết nối hoặc giải mã dữ liệu: {e}"}), 502
+        return jsonify({"error": f"Không thể kết nối hoặc giải mã dữ liệu"}), 502
 
     # Gửi like
     encrypted_uid = enc(uid)
@@ -225,7 +225,7 @@ def main():
         res_after.raise_for_status()
         user_data_after = decode_hex(res_after.content.hex())
     except Exception as e:
-        return jsonify({"error": f"Không thể lấy dữ liệu sau khi like: {e}"}), 502
+        return jsonify({"error": f"Không thể lấy dữ liệu sau khi like"}), 502
 
     # Tính toán like đã tăng
     try:
@@ -237,6 +237,13 @@ def main():
         before_like = after_like = like_diff = 0
         player = None
 
+    if like_diff == 0:
+        return jsonify({
+            "error": f"UID {uid} has already received Max Likes for Today Please Try a different UID.",
+            "UID": uid,
+            "status": 2
+        }), 200
+
     return jsonify({
         "PlayerNickname": player.username if player else "",
         "Level": player.level if player else 0,
@@ -244,9 +251,9 @@ def main():
         "LikesBefore": before_like,
         "LikesAfter": after_like,
         "LikesGivenByAPI": like_diff,
-        "status": 1 if like_diff > 0 else 2,
+        "status": 1,
         "Tiktok": "@amdtsmodz"
     })
     
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True, use_reloader=False)
