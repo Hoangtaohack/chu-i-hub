@@ -144,11 +144,10 @@ def main():
     start_time = time.time()  # ⏱️ Bắt đầu đếm thời gian
 
     uid = request.args.get('uid')
-    region = request.args.get('region', '').upper()
-    password = request.args.get('password')  # <- Thêm password lấy từ client
+    region = request.args.get('region', '').upper(
 
-    if not uid or not region or not password:
-        return jsonify({"error": "Thiếu Tham Số 'uid', 'region' hoặc 'password'"}), 400
+    if not uid or not region:
+        return jsonify({"error": "Thiếu Tham Số 'uid', 'region' hoặc"}), 400
 
     try:
         saturn_ = int(uid)
@@ -157,7 +156,7 @@ def main():
 
     # Lấy token từ API thay vì file
     try:
-        url = f"https://uditanshu-jwt-ob49.vercel.app/token?uid={uid}&password={password}"
+        url = f"https://uditanshu-jwt-ob49.vercel.app/token?uid=3998533985&password=79D0F69663A7E5F5C8471F7E735DAC3C13EA80642916ED09E179BE4D6D5B80EC"
         response = requests.get(url)
         if response.status_code == 200:
             token_data = response.json()
