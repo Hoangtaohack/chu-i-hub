@@ -144,7 +144,7 @@ def main():
     start_time = time.time()  # ⏱️ Bắt đầu đếm thời gian
 
     uid = request.args.get('uid')
-    region = request.args.get('region', '').upper(
+    region = request.args.get('region', '').upper()
 
     if not uid or not region:
         return jsonify({"error": "Thiếu Tham Số 'uid', 'region' hoặc"}), 400
