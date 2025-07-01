@@ -145,19 +145,30 @@ def main():
 
     uid = request.args.get('uid')
     region = request.args.get('region', '').upper()
+    password = request.args.get('password')  # <- Thêm password lấy từ client
 
-    if not uid or not region:
-        return jsonify({"error": "Thiếu Tham Số 'UID' Hoặc 'REGION' Vui Lòng Nhập Đủ"}), 400
+    if not uid or not region or not password:
+        return jsonify({"error": "Thiếu Tham Số 'uid', 'region' hoặc 'password'"}), 400
 
     try:
         saturn_ = int(uid)
     except ValueError:
         return jsonify({"error": "UID phải là số"}), 400
 
-    info_tokens = load_tokens(region, purpose="info")
-    if not info_tokens or 'token' not in info_tokens[0]:
-        return jsonify({"error": "Không thể lấy token INFO từ máy chủ"}), 500
-    info_token = info_tokens[0]['token']
+    # Lấy token từ API thay vì file
+    try:
+        url = f"https://uditanshu-jwt-ob49.vercel.app/token?uid={uid}&password={password}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            token_data = response.json()
+            if 'token' in token_data:
+                info_token = token_data['token']
+            else:
+                return jsonify({"error": "Không tìm thấy token trong phản hồi"}), 500
+        else:
+            return jsonify({"error": f"Lỗi khi gọi API lấy token, mã lỗi: {response.status_code}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Lỗi khi kết nối API token: {str(e)}"}), 500
 
     protobuf_data = create_protobuf(saturn_, 1)
     hex_data = protobuf_to_hex(protobuf_data)
