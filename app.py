@@ -156,7 +156,7 @@ def main():
 
     # Lấy token từ API thay vì file
     try:
-        url = f"https://uditanshu-jwt-ob49.vercel.app/token?uid=3998533985&password=79D0F69663A7E5F5C8471F7E735DAC3C13EA80642916ED09E179BE4D6D5B80EC"
+        url = f"https://jwt-gen-api-v2.onrender.com/token?uid=3998533985&password=79D0F69663A7E5F5C8471F7E735DAC3C13EA80642916ED09E179BE4D6D5B80EC"
         response = requests.get(url)
         if response.status_code == 200:
             token_data = response.json()
