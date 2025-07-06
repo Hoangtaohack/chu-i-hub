@@ -18,12 +18,15 @@ app = Flask(__name__)
 
 def load_tokens(server_name, purpose="like"):
     try:
-        file_name = "like.json" if purpose == "like" else "info.json"
-        with open(file_name, "r") as f:
-            tokens = json.load(f)
-        return tokens
+        response = requests.get("http://dinhhoang.x10.mx/api.php")
+        if response.status_code == 200:
+            tokens = response.json()
+            return tokens
+        else:
+            app.logger.error(f"Lỗi kết nối API: {response.status_code}")
+            return None
     except Exception as e:
-        app.logger.error(f"không thể tải token")
+        app.logger.error(f"Không thể tải token từ API: {str(e)}")
         return None
 
 
