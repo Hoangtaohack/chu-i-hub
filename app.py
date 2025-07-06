@@ -23,10 +23,10 @@ def load_tokens(server_name, purpose="like"):
             tokens = response.json()
             return tokens
         else:
-            app.logger.error(f"Lỗi kết nối API: {response.status_code}")
+            app.logger.error(f"Lỗi kết nối API Token")
             return None
     except Exception as e:
-        app.logger.error(f"Không thể tải token từ API: {str(e)}")
+        app.logger.error(f"đã sảy ra lỗi không thể tải token")
         return None
 
 
